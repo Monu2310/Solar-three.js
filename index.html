@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Explorer - Interactive Solar System</title>
+    <meta name="description" content="Explore the wonders of our solar system in stunning 3D. Navigate through space and discover the beauty of planetary motion.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="cosmic-background">
+        <div class="nebula-layer"></div>
+        <div class="dust-layer"></div>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <!-- Navigation & Brand -->
+    <nav class="cosmic-nav">
+        <div class="brand">
+            <span class="brand-icon">🌌</span>
+            <span class="brand-text">Cosmic Explorer</span>
+        </div>
+        <div class="nav-controls">
+            <button id="fullscreen-toggle" class="nav-btn" title="Toggle Fullscreen">
+                <span class="btn-icon">⛶</span>
+            </button>
+            <button id="theme-toggle" class="nav-btn" title="Toggle Theme">
+                <span class="btn-icon">🌙</span>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Enhanced Control Panel -->
+    <div id="control-panel" class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <h2>Mission Control</h2>
+                <span class="panel-subtitle">Navigate the Solar System</span>
+            </div>
+            <button id="panel-collapse" class="collapse-btn" title="Collapse Panel">
+                <span class="collapse-icon">⋯</span>
+            </button>
+        </div>
+        
+        <div class="panel-content">
+            <div class="mission-status">
+                <div class="status-item">
+                    <span class="status-label">Status:</span>
+                    <span id="mission-status" class="status-value active">ACTIVE</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Speed:</span>
+                    <span id="current-speed" class="status-value">1.0x</span>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3 class="section-title">Flight Controls</h3>
+                <div class="global-controls">
+                    <button id="pause-resume" class="primary-btn">
+                        <span class="btn-icon">⏸️</span>
+                        <span class="btn-text">Pause Mission</span>
+                    </button>
+                    
+                    <div class="control-group">
+                        <label for="global-speed" class="control-label">
+                            <span class="label-text">Mission Speed</span>
+                            <span id="global-speed-value" class="label-value">1.0x</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="global-speed" class="cosmic-slider" min="0" max="5" step="0.1" value="1">
+                            <div class="slider-track"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3 class="section-title">Planetary Dynamics</h3>
+                <div class="planet-controls" id="planet-controls">
+                    <!-- Planet controls will be generated dynamically -->
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3 class="section-title">Navigation</h3>
+                <div class="camera-controls">
+                    <button id="reset-camera" class="secondary-btn">
+                        <span class="btn-icon">🎯</span>
+                        <span class="btn-text">Center View</span>
+                    </button>
+                    
+                    <div class="control-group">
+                        <label for="camera-speed" class="control-label">
+                            <span class="label-text">Camera Sensitivity</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" id="camera-speed" class="cosmic-slider" min="0.1" max="2" step="0.1" value="1">
+                            <div class="slider-track"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Planet Info Tooltip -->
+    <div id="planet-tooltip" class="planet-tooltip">
+        <div class="tooltip-header">
+            <span class="tooltip-title"></span>
+            <span class="tooltip-type"></span>
+        </div>
+        <div class="tooltip-content">
+            <div class="tooltip-stats"></div>
+        </div>
+        <div class="tooltip-arrow"></div>
+    </div>
+    
+    <!-- Enhanced Loading Screen -->
+    <div id="loading" class="loading">
+        <div class="loading-container">
+            <div class="cosmic-loader">
+                <div class="loader-orbit">
+                    <div class="loader-planet"></div>
+                </div>
+                <div class="loader-orbit orbit-2">
+                    <div class="loader-planet planet-2"></div>
+                </div>
+                <div class="loader-orbit orbit-3">
+                    <div class="loader-planet planet-3"></div>
+                </div>
+                <div class="loader-center"></div>
+            </div>
+            <div class="loading-text">
+                <h2>Initializing Cosmic Explorer</h2>
+                <div class="loading-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <span class="progress-text">Calibrating stellar coordinates...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Indicator -->
+    <div id="performance-indicator" class="performance-indicator">
+        <div class="fps-counter">
+            <span class="fps-label">FPS:</span>
+            <span id="fps-value" class="fps-value">60</span>
+        </div>
+    </div>
+    
+    <script src="js/planetData.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/solarSystem.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
