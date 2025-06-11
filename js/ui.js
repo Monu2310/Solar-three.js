@@ -12,148 +12,328 @@ class UIController {
     }
     
     init() {
-        this.setupNavigation();
-        this.setupGlobalControls();
-        this.setupPlanetControls();
-        this.setupCameraControls();
-        this.setupEventListeners();
-        this.setupPerformanceMonitoring();
-        this.hideLoading();
-        this.addEntranceAnimations();
+        // Add defensive DOM ready check
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeUI());
+        } else {
+            this.initializeUI();
+        }
+    }
+    
+    initializeUI() {
+        console.log('🎮 Initializing UI Controller...');
+        
+        try {
+            this.setupNavigation();
+            this.setupGlobalControls();
+            this.setupCameraControls();
+            this.setupEventListeners();
+            this.setupPerformanceMonitoring();
+            this.hideLoading();
+            this.addEntranceAnimations();
+            
+            // Setup planet controls after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                this.setupPlanetControls();
+            }, 500);
+            
+            // Initialize sliders after everything is set up
+            setTimeout(() => {
+                this.initializeAllSliders();
+            }, 1000);
+            
+            console.log('✅ UI Controller initialized successfully');
+        } catch (error) {
+            console.error('❌ UI Controller initialization failed:', error);
+            this.showError('Failed to initialize mission control: ' + error.message);
+        }
     }
     
     setupNavigation() {
+        console.log('🧭 Setting up navigation controls...');
+        
         // Theme toggle
         const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            this.toggleTheme();
-        });
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+            console.log('✅ Theme toggle connected');
+        } else {
+            console.warn('⚠️ Theme toggle button not found');
+        }
         
         // Fullscreen toggle
         const fullscreenToggle = document.getElementById('fullscreen-toggle');
-        fullscreenToggle.addEventListener('click', () => {
-            this.toggleFullscreen();
-        });
+        if (fullscreenToggle) {
+            fullscreenToggle.addEventListener('click', () => {
+                this.toggleFullscreen();
+            });
+            console.log('✅ Fullscreen toggle connected');
+        } else {
+            console.warn('⚠️ Fullscreen toggle button not found');
+        }
         
         // Panel collapse
         const panelCollapse = document.getElementById('panel-collapse');
-        panelCollapse.addEventListener('click', () => {
-            this.toggleControlPanel();
-        });
+        if (panelCollapse) {
+            panelCollapse.addEventListener('click', () => {
+                this.toggleControlPanel();
+            });
+            console.log('✅ Panel collapse connected');
+        } else {
+            console.warn('⚠️ Panel collapse button not found');
+        }
     }
     
     setupGlobalControls() {
+        console.log('🎛️ Setting up global controls...');
+        
         // Enhanced pause/resume button
         const pauseBtn = document.getElementById('pause-resume');
         const missionStatus = document.getElementById('mission-status');
         const currentSpeed = document.getElementById('current-speed');
         
+        if (!pauseBtn) {
+            console.error('❌ Pause/resume button not found!');
+            return;
+        }
+        
+        if (!missionStatus) {
+            console.error('❌ Mission status element not found!');
+            return;
+        }
+        
+        if (!currentSpeed) {
+            console.error('❌ Current speed element not found!');
+            return;
+        }
+        
+        console.log('✅ Found all global control elements');
+        
         pauseBtn.addEventListener('click', () => {
-            const isRunning = this.solarSystem.togglePause();
-            
-            // Update button
-            const btnIcon = pauseBtn.querySelector('.btn-icon');
-            const btnText = pauseBtn.querySelector('.btn-text');
-            
-            if (isRunning) {
-                btnIcon.textContent = '⏸️';
-                btnText.textContent = 'Pause Mission';
-                pauseBtn.classList.remove('paused');
-                missionStatus.textContent = 'ACTIVE';
-                missionStatus.className = 'status-value active';
-            } else {
-                btnIcon.textContent = '▶️';
-                btnText.textContent = 'Resume Mission';
-                pauseBtn.classList.add('paused');
-                missionStatus.textContent = 'PAUSED';
-                missionStatus.className = 'status-value paused';
+            try {
+                console.log('🔄 Toggling pause state...');
+                
+                if (!this.solarSystem || typeof this.solarSystem.togglePause !== 'function') {
+                    console.error('❌ SolarSystem not available or missing togglePause method');
+                    this.showError('Solar system not ready yet. Please wait a moment.');
+                    return;
+                }
+                
+                const isRunning = this.solarSystem.togglePause();
+                console.log(`Mission is now: ${isRunning ? 'RUNNING' : 'PAUSED'}`);
+                
+                // Update button
+                const btnIcon = pauseBtn.querySelector('.btn-icon');
+                const btnText = pauseBtn.querySelector('.btn-text');
+                
+                if (!btnIcon || !btnText) {
+                    console.error('❌ Button elements not found');
+                    return;
+                }
+                
+                if (isRunning) {
+                    btnIcon.textContent = '⏸️';
+                    btnText.textContent = 'Pause Mission';
+                    pauseBtn.classList.remove('paused');
+                    missionStatus.textContent = 'ACTIVE';
+                    missionStatus.className = 'status-value active';
+                } else {
+                    btnIcon.textContent = '▶️';
+                    btnText.textContent = 'Resume Mission';
+                    pauseBtn.classList.add('paused');
+                    missionStatus.textContent = 'PAUSED';
+                    missionStatus.className = 'status-value paused';
+                }
+                
+                // Add button animation
+                pauseBtn.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    pauseBtn.style.transform = '';
+                }, 150);
+                
+                console.log('✅ UI updated successfully');
+            } catch (error) {
+                console.error('❌ Error in pause toggle:', error);
+                this.showError('Error controlling mission: ' + error.message);
             }
-            
-            // Add button animation
-            pauseBtn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                pauseBtn.style.transform = '';
-            }, 150);
         });
         
         // Enhanced global speed control
         const globalSpeedSlider = document.getElementById('global-speed');
         const globalSpeedValue = document.getElementById('global-speed-value');
         
-        globalSpeedSlider.addEventListener('input', (e) => {
-            const speed = parseFloat(e.target.value);
-            this.solarSystem.setGlobalSpeed(speed);
-            globalSpeedValue.textContent = speed.toFixed(1) + 'x';
-            currentSpeed.textContent = speed.toFixed(1) + 'x';
+        if (globalSpeedSlider && globalSpeedValue) {
+            globalSpeedSlider.addEventListener('input', (e) => {
+                try {
+                    const speed = parseFloat(e.target.value);
+                    
+                    if (!this.solarSystem || typeof this.solarSystem.setGlobalSpeed !== 'function') {
+                        console.error('❌ SolarSystem not available for speed control');
+                        return;
+                    }
+                    
+                    this.solarSystem.setGlobalSpeed(speed);
+                    globalSpeedValue.textContent = speed.toFixed(1) + 'x';
+                    currentSpeed.textContent = speed.toFixed(1) + 'x';
+                    
+                    // Update slider track fill
+                    this.updateSliderTrack(globalSpeedSlider);
+                    
+                    console.log(`Speed set to: ${speed.toFixed(1)}x`);
+                } catch (error) {
+                    console.error('❌ Error setting speed:', error);
+                    this.showError('Error setting speed: ' + error.message);
+                }
+            });
             
-            // Update slider track fill
+            // Initialize slider track
             this.updateSliderTrack(globalSpeedSlider);
-        });
-        
-        // Initialize slider track
-        this.updateSliderTrack(globalSpeedSlider);
+            console.log('✅ Global speed control connected');
+        } else {
+            console.warn('⚠️ Global speed control elements not found');
+        }
     }
     
     setupPlanetControls() {
-        const controlsContainer = document.getElementById('planet-controls');
+        console.log('🪐 Setting up planet controls...');
         
+        const controlsContainer = document.getElementById('planet-controls');
+        if (!controlsContainer) {
+            console.error('❌ Planet controls container not found!');
+            return;
+        }
+        
+        if (typeof PLANET_DATA === 'undefined') {
+            console.error('❌ PLANET_DATA not loaded!');
+            return;
+        }
+        
+        console.log('🌍 PLANET_DATA available with keys:', Object.keys(PLANET_DATA));
+        
+        let planetCount = 0;
         Object.keys(PLANET_DATA).forEach((key, index) => {
             if (key === 'sun') return;
             
-            const planetData = PLANET_DATA[key];
-            const controlElement = this.createEnhancedPlanetControl(key, planetData);
-            controlsContainer.appendChild(controlElement);
-            
-            // Add staggered entrance animation
-            setTimeout(() => {
-                controlElement.classList.add('animate-fadeInUp');
-            }, index * 100);
+            try {
+                console.log(`🪐 Creating control for ${key}...`);
+                const planetData = PLANET_DATA[key];
+                const controlElement = this.createEnhancedPlanetControl(key, planetData);
+                
+                if (controlElement) {
+                    controlsContainer.appendChild(controlElement);
+                    planetCount++;
+                    console.log(`✅ Added ${key} control to container`);
+                    
+                    // Make visible immediately and add staggered entrance animation
+                    setTimeout(() => {
+                        controlElement.style.opacity = '1';
+                        controlElement.classList.add('animate-fadeInUp');
+                    }, index * 100 + 100);
+                } else {
+                    console.error(`❌ Failed to create control element for ${key}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error creating control for ${key}:`, error);
+            }
         });
+        
+        console.log(`✅ Created ${planetCount} planet controls total`);
+        console.log(`📊 Container now has ${controlsContainer.children.length} children`);
+        
+        // Fallback: Make sure all planet controls are visible after a delay
+        setTimeout(() => {
+            const planetControls = controlsContainer.querySelectorAll('.planet-control');
+            planetControls.forEach((control, index) => {
+                if (control.style.opacity === '0' || !control.style.opacity) {
+                    console.log(`🔧 Making planet control ${index} visible (fallback)`);
+                    control.style.opacity = '1';
+                    control.style.transform = 'translateY(0)';
+                }
+            });
+        }, 2000);
     }
     
     createEnhancedPlanetControl(planetKey, planetData) {
+        console.log(`🔧 Creating control for ${planetKey}...`);
+        
+        if (!planetData) {
+            console.error(`❌ No planet data provided for ${planetKey}`);
+            return null;
+        }
+        
         const controlDiv = document.createElement('div');
         controlDiv.className = 'planet-control';
-        controlDiv.style.opacity = '0';
+        controlDiv.style.opacity = '0.3'; // Start slightly visible for debugging
         
         const planetType = this.getPlanetType(planetKey);
         const planetEmoji = this.getPlanetEmoji(planetKey);
         
-        controlDiv.innerHTML = `
-            <div class="planet-info">
-                <div class="planet-color" style="background-color: #${planetData.color.toString(16).padStart(6, '0')}"></div>
-                <div class="planet-details">
-                    <span class="planet-name">${planetEmoji} ${planetData.name}</span>
-                    <span class="planet-type">${planetType}</span>
+        console.log(`🎨 Rendering ${planetKey} with color: ${planetData.color}`);
+        
+        try {
+            controlDiv.innerHTML = `
+                <div class="planet-info">
+                    <div class="planet-color" style="background-color: #${planetData.color.toString(16).padStart(6, '0')}"></div>
+                    <div class="planet-details">
+                        <span class="planet-name">${planetEmoji} ${planetData.name}</span>
+                        <span class="planet-type">${planetType}</span>
+                    </div>
+                    <span class="speed-value" id="${planetKey}-speed-value">1.0x</span>
                 </div>
-                <span class="speed-value" id="${planetKey}-speed-value">1.0x</span>
-            </div>
-            <div class="slider-container">
-                <input type="range" 
-                       id="${planetKey}-speed" 
-                       class="cosmic-slider"
-                       min="0" 
-                       max="5" 
-                       step="0.1" 
-                       value="1"
-                       data-planet="${planetKey}">
-                <div class="slider-track"></div>
-            </div>
-        `;
+                <div class="slider-container">
+                    <input type="range" 
+                           id="${planetKey}-speed" 
+                           class="cosmic-slider"
+                           min="0" 
+                           max="5" 
+                           step="0.1" 
+                           value="1"
+                           data-planet="${planetKey}">
+                    <div class="slider-track"></div>
+                </div>
+            `;
+            
+            console.log(`✅ HTML generated for ${planetKey}`);
+        } catch (error) {
+            console.error(`❌ Error generating HTML for ${planetKey}:`, error);
+            return null;
+        }
         
         // Add enhanced event listeners
         const slider = controlDiv.querySelector(`#${planetKey}-speed`);
         const valueDisplay = controlDiv.querySelector(`#${planetKey}-speed-value`);
         
+        if (!slider || !valueDisplay) {
+            console.error(`❌ Slider elements not found for ${planetKey}`);
+            return controlDiv;
+        }
+        
         slider.addEventListener('input', (e) => {
-            const speed = parseFloat(e.target.value);
-            this.solarSystem.setPlanetSpeed(planetKey, speed);
-            valueDisplay.textContent = speed.toFixed(1) + 'x';
-            this.updateSliderTrack(slider);
-            
-            // Add haptic feedback on mobile
-            if (navigator.vibrate && speed > 0) {
-                navigator.vibrate(10);
+            try {
+                const speed = parseFloat(e.target.value);
+                console.log(`🪐 Setting ${planetKey} speed to ${speed.toFixed(1)}x`);
+                
+                if (!this.solarSystem || typeof this.solarSystem.setPlanetSpeed !== 'function') {
+                    console.error('❌ SolarSystem not available for planet speed control');
+                    this.showError('Solar system not ready for planet control');
+                    return;
+                }
+                
+                this.solarSystem.setPlanetSpeed(planetKey, speed);
+                valueDisplay.textContent = speed.toFixed(1) + 'x';
+                this.updateSliderTrack(slider);
+                
+                // Add haptic feedback on mobile
+                if (navigator.vibrate && speed > 0) {
+                    navigator.vibrate(10);
+                }
+                
+                console.log(`✅ ${planetKey} speed updated successfully`);
+            } catch (error) {
+                console.error(`❌ Error setting ${planetKey} speed:`, error);
+                this.showError(`Error controlling ${planetKey}: ${error.message}`);
             }
         });
         
@@ -203,11 +383,68 @@ class UIController {
     }
     
     updateSliderTrack(slider) {
-        const percentage = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
-        const track = slider.parentElement.querySelector('.slider-track');
-        if (track) {
-            track.style.background = `linear-gradient(90deg, var(--cosmic-gold) 0%, var(--cosmic-pink) ${percentage}%, rgba(255,255,255,0.1) ${percentage}%)`;
+        if (!slider) {
+            console.warn('⚠️ updateSliderTrack: slider is null');
+            return;
         }
+        
+        try {
+            const min = parseFloat(slider.min) || 0;
+            const max = parseFloat(slider.max) || 5;
+            const value = parseFloat(slider.value) || 0;
+            const percentage = ((value - min) / (max - min)) * 100;
+            
+            const track = slider.parentElement?.querySelector('.slider-track');
+            
+            if (track) {
+                // Create a smooth gradient that shows the current value
+                const gradientStops = `var(--cosmic-gold) 0%, var(--cosmic-pink) ${percentage}%, rgba(255,255,255,0.1) ${percentage}%, rgba(255,255,255,0.05) 100%`;
+                track.style.background = `linear-gradient(90deg, ${gradientStops})`;
+                track.style.opacity = '1';
+                console.log(`🎚️ Updated slider track: ${percentage.toFixed(1)}% (value: ${value})`);
+            } else {
+                console.warn('⚠️ Slider track element not found for slider:', slider.id);
+                // Fallback: create the track if it doesn't exist
+                this.createSliderTrack(slider);
+            }
+        } catch (error) {
+            console.error('❌ Error updating slider track:', error);
+        }
+    }
+    
+    createSliderTrack(slider) {
+        if (!slider.parentElement) {
+            console.warn('⚠️ Slider has no parent element:', slider.id);
+            return;
+        }
+        
+        const existingTrack = slider.parentElement.querySelector('.slider-track');
+        if (existingTrack) {
+            console.log('✅ Slider track already exists for:', slider.id);
+            return; // Already exists
+        }
+        
+        const track = document.createElement('div');
+        track.className = 'slider-track';
+        track.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--cosmic-gold) 0%, var(--cosmic-pink) 0%, rgba(255,255,255,0.1) 0%);
+            border-radius: 3px;
+            transition: background 0.3s ease;
+            pointer-events: none;
+            z-index: 1;
+        `;
+        
+        slider.parentElement.appendChild(track);
+        console.log('✅ Created missing slider track for:', slider.id);
+        
+        // Update the track immediately with current value
+        setTimeout(() => {
+            this.updateSliderTrack(slider);
+        }, 10);
     }
     
     highlightPlanet(planetKey, highlight) {
@@ -228,34 +465,69 @@ class UIController {
     
     
     setupCameraControls() {
+        console.log('📷 Setting up camera controls...');
+        
         // Enhanced reset camera button
         const resetCameraBtn = document.getElementById('reset-camera');
-        resetCameraBtn.addEventListener('click', () => {
-            this.solarSystem.resetCamera();
-            
-            // Add visual feedback
-            resetCameraBtn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                resetCameraBtn.style.transform = '';
-            }, 150);
-            
-            this.showNotification('🎯 Camera view reset', 'success', 2000);
-        });
+        if (resetCameraBtn) {
+            resetCameraBtn.addEventListener('click', () => {
+                try {
+                    if (!this.solarSystem || typeof this.solarSystem.resetCamera !== 'function') {
+                        console.error('❌ SolarSystem not available for camera reset');
+                        this.showError('Camera controls not ready yet');
+                        return;
+                    }
+                    
+                    this.solarSystem.resetCamera();
+                    
+                    // Add visual feedback
+                    resetCameraBtn.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        resetCameraBtn.style.transform = '';
+                    }, 150);
+                    
+                    this.showNotification('🎯 Camera view reset', 'success', 2000);
+                    console.log('✅ Camera reset successfully');
+                } catch (error) {
+                    console.error('❌ Error resetting camera:', error);
+                    this.showError('Error resetting camera: ' + error.message);
+                }
+            });
+            console.log('✅ Camera reset button connected');
+        } else {
+            console.warn('⚠️ Camera reset button not found');
+        }
         
         // Enhanced camera speed control
         const cameraSpeedSlider = document.getElementById('camera-speed');
-        cameraSpeedSlider.addEventListener('input', (e) => {
-            const speed = parseFloat(e.target.value);
-            if (this.solarSystem.controls) {
-                this.solarSystem.controls.rotateSpeed = speed;
-                this.solarSystem.controls.panSpeed = speed;
-                this.solarSystem.controls.zoomSpeed = speed;
-            }
+        if (cameraSpeedSlider) {
+            cameraSpeedSlider.addEventListener('input', (e) => {
+                try {
+                    const speed = parseFloat(e.target.value);
+                    
+                    if (!this.solarSystem || !this.solarSystem.controls) {
+                        console.warn('⚠️ Camera controls not available yet');
+                        return;
+                    }
+                    
+                    this.solarSystem.controls.rotateSpeed = speed;
+                    this.solarSystem.controls.panSpeed = speed;
+                    this.solarSystem.controls.zoomSpeed = speed;
+                    
+                    this.updateSliderTrack(cameraSpeedSlider);
+                    console.log(`📷 Camera speed set to: ${speed.toFixed(1)}x`);
+                } catch (error) {
+                    console.error('❌ Error setting camera speed:', error);
+                    this.showError('Error controlling camera speed: ' + error.message);
+                }
+            });
+            
+            // Initialize camera slider track
             this.updateSliderTrack(cameraSpeedSlider);
-        });
-        
-        // Initialize camera slider track
-        this.updateSliderTrack(cameraSpeedSlider);
+            console.log('✅ Camera speed control connected');
+        } else {
+            console.warn('⚠️ Camera speed slider not found');
+        }
     }
     
     toggleTheme() {
@@ -310,23 +582,47 @@ class UIController {
     }
     
     toggleControlPanel() {
+        console.log('🔄 Toggling control panel...');
+        
         const controlPanel = document.querySelector('.control-panel');
         const collapseIcon = document.querySelector('.collapse-icon');
         
+        if (!controlPanel) {
+            console.error('❌ Control panel not found');
+            this.showError('Control panel not found');
+            return;
+        }
+        
         this.isControlPanelCollapsed = !this.isControlPanelCollapsed;
+        console.log(`Panel collapsed state: ${this.isControlPanelCollapsed}`);
         
         if (this.isControlPanelCollapsed) {
             if (window.innerWidth <= 768) {
                 controlPanel.classList.add('collapsed');
+                console.log('📱 Added collapsed class for mobile');
             } else {
                 controlPanel.style.transform = 'translateX(calc(100% - 60px))';
+                console.log('🖥️ Applied desktop collapse transform');
             }
-            collapseIcon.textContent = '⋮';
+            if (collapseIcon) {
+                collapseIcon.textContent = '⋮';
+            }
         } else {
             controlPanel.classList.remove('collapsed');
             controlPanel.style.transform = 'translateX(0)';
-            collapseIcon.textContent = '⋯';
+            if (collapseIcon) {
+                collapseIcon.textContent = '⋯';
+            }
+            console.log('✅ Panel expanded');
         }
+        
+        // Add visual feedback
+        controlPanel.style.transition = 'transform 0.3s ease';
+        this.showNotification(
+            this.isControlPanelCollapsed ? '📱 Panel collapsed' : '📱 Panel expanded', 
+            'info', 
+            1500
+        );
     }
     
     setupPerformanceMonitoring() {
@@ -371,28 +667,6 @@ class UIController {
     }
     
     setupEventListeners() {
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch(e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    document.getElementById('pause-resume').click();
-                    break;
-                case 'KeyR':
-                    e.preventDefault();
-                    document.getElementById('reset-camera').click();
-                    break;
-                case 'KeyT':
-                    e.preventDefault();
-                    document.getElementById('theme-toggle').click();
-                    break;
-                case 'KeyH':
-                    e.preventDefault();
-                    this.toggleControlPanel();
-                    break;
-            }
-        });
-        
         // Touch/mobile gestures
         if (Utils.isMobile()) {
             this.setupMobileControls();
@@ -418,17 +692,6 @@ class UIController {
             this.solarSystem.controls.rotateSpeed = 0.5;
             this.solarSystem.controls.panSpeed = 0.5;
             this.solarSystem.controls.zoomSpeed = 0.8;
-        }
-    }
-    
-    toggleControlPanel() {
-        const controlPanel = document.querySelector('.control-panel');
-        this.isControlPanelCollapsed = !this.isControlPanelCollapsed;
-        
-        if (this.isControlPanelCollapsed) {
-            controlPanel.style.transform = 'translateX(100%)';
-        } else {
-            controlPanel.style.transform = 'translateX(0)';
         }
     }
     
@@ -488,17 +751,6 @@ class UIController {
         }
     }
     
-    hideLoading() {
-        const loading = document.getElementById('loading');
-        setTimeout(() => {
-            loading.classList.add('hidden');
-            setTimeout(() => {
-                loading.style.display = 'none';
-            }, 500);
-        }, 1000);
-    }
-    
-    
     showPlanetTooltip(object, event) {
         const tooltip = document.getElementById('planet-tooltip');
         const data = object.userData.data;
@@ -541,6 +793,17 @@ class UIController {
             loading.classList.add('hidden');
             setTimeout(() => {
                 loading.style.display = 'none';
+                // Refresh all sliders after loading is complete
+                this.refreshAllSliders();
+                
+                // Check if planet controls were created, if not create them
+                setTimeout(() => {
+                    const container = document.getElementById('planet-controls');
+                    if (container && container.children.length === 0) {
+                        console.log('🔧 Planet controls missing after loading, creating them now...');
+                        this.setupPlanetControls();
+                    }
+                }, 500);
             }, 800);
         }, 1500);
     }
@@ -597,6 +860,11 @@ class UIController {
         }, duration);
     }
     
+    showError(message) {
+        console.error('🚨 UI Error:', message);
+        this.showNotification(message, 'error', 5000);
+    }
+    
     loadPreferences() {
         // Load theme preference
         const savedTheme = localStorage.getItem('cosmicExplorerTheme');
@@ -641,93 +909,64 @@ class UIController {
         }
     }
     
-    destroy() {
-        // Save preferences before destroying
-        this.savePreferences();
+    initializeAllSliders() {
+        console.log('🎚️ Initializing all sliders...');
         
-        // Cancel animation frame
-        if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
+        // Global speed slider
+        const globalSpeedSlider = document.getElementById('global-speed');
+        if (globalSpeedSlider) {
+            this.updateSliderTrack(globalSpeedSlider);
+            console.log('✅ Global speed slider initialized');
         }
         
-        // Remove event listeners
-        document.removeEventListener('keydown', this.handleKeydown);
-    }
-    
-    updatePlanetInfo(planetName, newInfo) {
-        // This could be used to dynamically update planet information
-        const planet = this.solarSystem.planets.get(planetName.toLowerCase());
-        if (planet) {
-            planet.mesh.userData.data.info = { ...planet.mesh.userData.data.info, ...newInfo };
+        // Camera speed slider
+        const cameraSpeedSlider = document.getElementById('camera-speed');
+        if (cameraSpeedSlider) {
+            this.updateSliderTrack(cameraSpeedSlider);
+            console.log('✅ Camera speed slider initialized');
         }
-    }
-    
-    // Method to export current state
-    exportState() {
-        const state = {
-            globalSpeed: this.solarSystem.globalSpeed,
-            planetSpeeds: Object.fromEntries(this.solarSystem.planetSpeeds),
-            theme: this.isDarkTheme ? 'dark' : 'light',
-            cameraPosition: this.solarSystem.camera.position.toArray(),
-            cameraTarget: this.solarSystem.controls.target.toArray()
-        };
         
-        return JSON.stringify(state, null, 2);
-    }
-    
-    // Method to import state
-    importState(stateJson) {
-        try {
-            const state = JSON.parse(stateJson);
+        // Planet sliders
+        Object.keys(PLANET_DATA).forEach(key => {
+            if (key === 'sun') return;
             
-            // Apply global speed
-            if (state.globalSpeed !== undefined) {
-                this.solarSystem.setGlobalSpeed(state.globalSpeed);
-                document.getElementById('global-speed').value = state.globalSpeed;
-                document.getElementById('global-speed-value').textContent = state.globalSpeed.toFixed(1) + 'x';
+            const planetSlider = document.getElementById(`${key}-speed`);
+            if (planetSlider) {
+                this.updateSliderTrack(planetSlider);
+                console.log(`✅ ${key} slider initialized`);
             }
-            
-            // Apply planet speeds
-            if (state.planetSpeeds) {
-                Object.entries(state.planetSpeeds).forEach(([planet, speed]) => {
-                    this.solarSystem.setPlanetSpeed(planet, speed);
-                    const slider = document.getElementById(`${planet}-speed`);
-                    const valueDisplay = document.getElementById(`${planet}-speed-value`);
-                    if (slider && valueDisplay) {
-                        slider.value = speed;
-                        valueDisplay.textContent = speed.toFixed(1) + 'x';
-                    }
-                });
-            }
-            
-            // Apply theme
-            if (state.theme && state.theme !== (this.isDarkTheme ? 'dark' : 'light')) {
-                this.toggleTheme();
-            }
-            
-            // Apply camera position
-            if (state.cameraPosition && state.cameraTarget) {
-                this.solarSystem.camera.position.fromArray(state.cameraPosition);
-                this.solarSystem.controls.target.fromArray(state.cameraTarget);
-                this.solarSystem.controls.update();
-            }
-            
-            this.showNotification('State imported successfully!', 'success');
-        } catch (error) {
-            this.showNotification('Error importing state: ' + error.message, 'error');
-        }
-    }
-    
-    destroy() {
-        // Save preferences before destroying
-        this.savePreferences();
+        });
         
-        // Remove event listeners
-        document.removeEventListener('keydown', this.handleKeydown);
+        console.log('🎚️ All sliders initialized successfully');
     }
-}
-
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = UIController;
+    
+    refreshAllSliders() {
+        console.log('🔄 Refreshing all sliders...');
+        
+        const allSliders = document.querySelectorAll('.cosmic-slider');
+        let refreshCount = 0;
+        
+        allSliders.forEach(slider => {
+            try {
+                // Ensure the slider has a track
+                this.createSliderTrack(slider);
+                
+                // Update the visual state
+                this.updateSliderTrack(slider);
+                
+                // Trigger any associated value displays
+                const valueDisplay = document.querySelector(`#${slider.id}-value`);
+                if (valueDisplay && slider.value) {
+                    valueDisplay.textContent = parseFloat(slider.value).toFixed(1) + 'x';
+                }
+                
+                refreshCount++;
+                console.log(`✅ Refreshed slider: ${slider.id}`);
+            } catch (error) {
+                console.error(`❌ Error refreshing slider ${slider.id}:`, error);
+            }
+        });
+        
+        console.log(`🔄 Refreshed ${refreshCount} sliders successfully`);
+    }
 }

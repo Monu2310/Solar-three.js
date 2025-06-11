@@ -27,21 +27,22 @@ class CosmicExplorerApp {
             if (!this.checkSystemCompatibility()) {
                 return;
             }
-            
-            // Initialize with better error handling
-            await this.initializeWithProgress();
-            
-            // Setup advanced features
+                 // Initialize with better error handling
+        await this.initializeWithProgress();
+        
+        // Mark as ready
+        this.isInitialized = true;
+        
+        // Setup advanced features after UI is ready
+        setTimeout(() => {
             this.setupAdvancedFeatures();
-            
-            // Mark as ready
-            this.isInitialized = true;
-            
-            console.log('🌌 Cosmic Explorer initialized successfully!');
+        }, 1000);
+        
+        console.log('🌌 Cosmic Explorer initialized successfully!');
             
         } catch (error) {
             console.error('🚨 Failed to initialize Cosmic Explorer:', error);
-            this.showError('Failed to initialize the cosmic simulation: ' + error.message);
+            this.displayError('Failed to initialize the cosmic simulation: ' + error.message);
         }
     }
     
@@ -70,7 +71,7 @@ class CosmicExplorerApp {
         }
         
         if (issues.length > 0) {
-            this.showError('System compatibility issues detected:\n' + issues.join('\n'));
+            this.displayError('System compatibility issues detected:\n' + issues.join('\n'));
             return false;
         }
         
@@ -125,11 +126,21 @@ class CosmicExplorerApp {
     }
     
     setupAdvancedKeyboardShortcuts() {
+        console.log('⌨️ Setting up keyboard shortcuts...');
+        console.log('UIController available:', this.uiController ? '✅' : '❌');
+        
         const shortcuts = {
             'Space': () => document.getElementById('pause-resume')?.click(),
             'KeyR': () => document.getElementById('reset-camera')?.click(),
             'KeyT': () => document.getElementById('theme-toggle')?.click(),
-            'KeyH': () => this.uiController?.toggleControlPanel(),
+            'KeyH': () => {
+                console.log('🎹 H key pressed - attempting to toggle panel');
+                if (this.uiController?.toggleControlPanel) {
+                    this.uiController.toggleControlPanel();
+                } else {
+                    console.error('❌ UIController or toggleControlPanel method not available');
+                }
+            },
             'KeyF': () => document.getElementById('fullscreen-toggle')?.click(),
             'Escape': () => {
                 if (document.fullscreenElement) {
@@ -154,10 +165,13 @@ class CosmicExplorerApp {
             
             const action = shortcuts[e.code];
             if (action) {
+                console.log(`🎹 Keyboard shortcut triggered: ${e.code}`);
                 e.preventDefault();
                 action();
             }
         });
+        
+        console.log('✅ Keyboard shortcuts initialized with', Object.keys(shortcuts).length, 'shortcuts');
     }
     
     setupMouseGestures() {
@@ -378,7 +392,9 @@ class CosmicExplorerApp {
             throw new Error('Solar system must be initialized before UI');
         }
         
+        console.log('🎮 Creating UIController...');
         this.uiController = new UIController(this.solarSystem);
+        console.log('✅ UIController created successfully');
         
         // Add additional UI enhancements
         this.setupKeyboardHelp();
@@ -389,13 +405,13 @@ class CosmicExplorerApp {
         // Global error handler
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
-            this.showError('An unexpected error occurred. Please refresh the page.');
+            this.displayError('An unexpected error occurred. Please refresh the page.');
         });
         
         // Unhandled promise rejection handler
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            this.showError('An unexpected error occurred. Please refresh the page.');
+            this.displayError('An unexpected error occurred. Please refresh the page.');
         });
     }
     
@@ -565,7 +581,7 @@ class CosmicExplorerApp {
         }
     }
     
-    showError(message) {
+    displayError(message) {
         // Hide loading screen
         const loading = document.getElementById('loading');
         if (loading) {
@@ -664,6 +680,8 @@ class CosmicExplorerApp {
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 DOM ready, initializing Cosmic Explorer...');
+    
     // Add loading screen enhancement
     const loadingText = document.querySelector('.loading-text h2');
     if (loadingText) {
@@ -685,7 +703,150 @@ document.addEventListener('DOMContentLoaded', () => {
         getPerformance: () => ({
             fps: window.cosmicExplorer.solarSystem?.performanceMonitor?.fps,
             renderer: window.cosmicExplorer.solarSystem?.renderer?.info
-        })
+        }),
+        testMissionControl: () => {
+            console.log('🧪 Testing Mission Control...');
+            const pauseBtn = document.getElementById('pause-resume');
+            const missionStatus = document.getElementById('mission-status');
+            const globalSpeed = document.getElementById('global-speed');
+            
+            console.log('Pause button:', pauseBtn ? '✅' : '❌');
+            console.log('Mission status:', missionStatus ? '✅' : '❌');
+            console.log('Global speed:', globalSpeed ? '✅' : '❌');
+            console.log('UIController:', window.cosmicExplorer?.uiController ? '✅' : '❌');
+            console.log('SolarSystem:', window.cosmicExplorer?.solarSystem ? '✅' : '❌');
+            
+            if (pauseBtn) {
+                console.log('🎯 Attempting pause button click...');
+                pauseBtn.click();
+            }
+        },
+        testSliders: () => {
+            console.log('🎚️ Testing Sliders...');
+            
+            // Test global speed slider
+            const globalSpeed = document.getElementById('global-speed');
+            if (globalSpeed) {
+                console.log('✅ Global speed slider found');
+                globalSpeed.value = '2.0';
+                globalSpeed.dispatchEvent(new Event('input'));
+                console.log('🔄 Triggered global speed change to 2.0x');
+            } else {
+                console.log('❌ Global speed slider not found');
+            }
+            
+            // Test planet sliders
+            const planetNames = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+            planetNames.forEach(planet => {
+                const slider = document.getElementById(`${planet}-speed`);
+                if (slider) {
+                    console.log(`✅ ${planet} slider found`);
+                    slider.value = '1.5';
+                    slider.dispatchEvent(new Event('input'));
+                    console.log(`🔄 Triggered ${planet} speed change to 1.5x`);
+                } else {
+                    console.log(`❌ ${planet} slider not found`);
+                }
+            });
+            
+            // Test camera speed slider
+            const cameraSpeed = document.getElementById('camera-speed');
+            if (cameraSpeed) {
+                console.log('✅ Camera speed slider found');
+                cameraSpeed.value = '1.2';
+                cameraSpeed.dispatchEvent(new Event('input'));
+                console.log('🔄 Triggered camera speed change to 1.2x');
+            } else {
+                console.log('❌ Camera speed slider not found');
+            }
+        },
+        refreshSliders: () => {
+            console.log('🔄 Refreshing all sliders...');
+            if (window.cosmicExplorer?.uiController?.refreshAllSliders) {
+                window.cosmicExplorer.uiController.refreshAllSliders();
+            } else {
+                console.log('❌ UIController or refreshAllSliders method not available');
+            }
+        },
+        testKeyboardShortcuts: () => {
+            console.log('⌨️ Testing keyboard shortcuts...');
+            const shortcuts = {
+                'Space': 'Pause/Resume',
+                'KeyR': 'Reset Camera', 
+                'KeyT': 'Toggle Theme',
+                'KeyH': 'Hide/Show Panel',
+                'KeyF': 'Toggle Fullscreen'
+            };
+            
+            Object.entries(shortcuts).forEach(([key, description]) => {
+                console.log(`Testing ${key} (${description})...`);
+                const event = new KeyboardEvent('keydown', { code: key });
+                document.dispatchEvent(event);
+            });
+        },
+        testTogglePanel: () => {
+            console.log('🔄 Testing panel toggle...');
+            if (window.cosmicExplorer?.uiController?.toggleControlPanel) {
+                window.cosmicExplorer.uiController.toggleControlPanel();
+            } else {
+                console.log('❌ UIController or toggleControlPanel method not available');
+            }
+        },
+        debugPlanetControls: () => {
+            console.log('🪐 Debugging planet controls...');
+            const container = document.getElementById('planet-controls');
+            console.log('Container found:', container ? '✅' : '❌');
+            console.log('Container children:', container?.children.length || 0);
+            console.log('PLANET_DATA:', typeof PLANET_DATA !== 'undefined' ? '✅' : '❌');
+            
+            if (window.cosmicExplorer?.uiController) {
+                console.log('🔧 Re-running setupPlanetControls...');
+                window.cosmicExplorer.uiController.setupPlanetControls();
+            }
+        },
+        createMissingPlanetControls: () => {
+            console.log('🛠️ Manually creating planet controls...');
+            const container = document.getElementById('planet-controls');
+            if (!container) {
+                console.log('❌ No container found');
+                return;
+            }
+            
+            // Clear existing content
+            container.innerHTML = '';
+            
+            if (typeof PLANET_DATA === 'undefined') {
+                console.log('❌ PLANET_DATA not available');
+                return;
+            }
+            
+            Object.keys(PLANET_DATA).forEach(key => {
+                if (key === 'sun') return;
+                
+                const planetData = PLANET_DATA[key];
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'planet-control';
+                controlDiv.style.cssText = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-bottom: 12px; opacity: 1;';
+                
+                controlDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #${planetData.color.toString(16).padStart(6, '0')};"></div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: white;">${planetData.name}</div>
+                            <div style="font-size: 12px; opacity: 0.7;">Planet</div>
+                        </div>
+                        <span style="font-weight: 600; color: var(--cosmic-gold);">1.0x</span>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="range" id="${key}-speed" min="0" max="5" step="0.1" value="1" 
+                               style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; -webkit-appearance: none;">
+                    </div>
+                `;
+                
+                container.appendChild(controlDiv);
+                console.log(`✅ Created control for ${key}`);
+            });
+        }
     };
     
     // Add easter egg
